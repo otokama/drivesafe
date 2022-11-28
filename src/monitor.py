@@ -34,6 +34,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', required=False, default='', help='path to input video')
 parser.add_argument('-p', '--face_landmark_predictor', required=True,
 	help='path to shape_predictor_68_face_landmarks.dat')
+parser.add_argument('-v', '--verbose', action='store_true',
+	help='turn on verbose mode: add blink and nodding count')
 input_args = parser.parse_args()
 
 
@@ -71,18 +73,10 @@ while True:
 		break
 	frame = stream.read()
 	frame = imutils.resize(frame, width=500)
-
 	graysc_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	faces = detector(graysc_img, 0)
 
 	for i, face in enumerate(faces):
-		# face_bb = face_utils.rect_to_bb(face)
-
-		# face_rect = cv2.rectangle(frame, (face_bb[0], face_bb[1]), 
-		# 	(face_bb[0] + face_bb[2], face_bb[1] + face_bb[3]), (62, 255, 132), 2)
-		# cv2.putText(face_rect, 'Face' + str(i + 1), 
-		# 	(face_bb[0], face_bb[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (62, 255, 132))
-
 
 		face_shape = predictor(graysc_img, face)
 		face_shape = face_utils.shape_to_np(face_shape)
@@ -112,17 +106,23 @@ while True:
 				total_blinks += 1
 			blink_counter = 0
 
+		if input_args.verbose:
+			face_bb = face_utils.rect_to_bb(face)
 
-		cv2.putText(frame, "Blinks: {}".format(total_blinks), (10, 30),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-		cv2.putText(frame, "Nodding Cnt: {}".format(total_nod), (10, 60),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-		cv2.putText(frame, "EAR (AVG): {:.2f}".format(EAR_AVG), (10, 90),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+			face_rect = cv2.rectangle(frame, (face_bb[0], face_bb[1]), 
+				(face_bb[0] + face_bb[2], face_bb[1] + face_bb[3]), (62, 255, 132), 2)
+			cv2.putText(face_rect, 'Face' + str(i + 1), 
+				(face_bb[0], face_bb[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (62, 255, 132))
 
-
+			cv2.putText(frame, "Blinks: {}".format(total_blinks), (10, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+			cv2.putText(frame, "Nodding Cnt: {}".format(total_nod), (10, 60),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+			cv2.putText(frame, "EAR (AVG): {:.2f}".format(EAR_AVG), (10, 90),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 	cv2.imshow("Drowsiness Detector", frame)
+
 	key = cv2.waitKey(1) & 0xFF
 	if key == ord("q"):
 		break
