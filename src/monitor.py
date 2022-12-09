@@ -11,8 +11,10 @@ from imutils.video import VideoStream
 import sys
 import os
 
-EYE_CLOSE_THRESHOLD = 0.09
-YAWN_THRESHOLD = 0.1
+EYE_CLOSE_THRESHOLD = 0.5
+YAWN_THRESHOLD = 0.9
+EAR_THRESHOLD = 0.07
+MAR_THRESHOLD = 0.7
 NOD_CONSEQ_FRAMES = 5
 NOD_THRESHOLD = 1
 
@@ -27,11 +29,11 @@ def EAR(eye_coor):
 
 def detectEyeClose(EAR, buffer):
 	mean = np.mean(buffer)
-	return mean - EAR >= EYE_CLOSE_THRESHOLD or EAR < 0.1
+	return mean - EAR >= EAR_THRESHOLD or EAR < 0.1
 
 def detectYawn(MAR, buffer):
 	mean = np.mean(buffer)
-	return mean - MAR >= YAWN_THRESHOLD or MAR > 0.2
+	return mean - MAR >= MAR_THRESHOLD or MAR > 0.8
 
 # Calculates mouth aspect ratio. Similar to EAR formula.
 def MOUTHAR(mouth_coor):
@@ -88,13 +90,15 @@ if __name__ == '__main__':
 	eyeIsClosed = False
 	eyeClosedStartTime = 0
 	eyesClosedInterval = 0
+	maxEyesClosedInterval = 0
 	yawnStartTime = 0
 	yawnInterval = 0
+	maxYawnInterval = 0
 	prev_nose_y = 0
 	nod_counter = 0
 	total_nod = 0
 	MAR_buffer = [0.01] * buffer_len
-	show_alert = False
+	# show_alert = False
 	buffer_idx = 0
 
 
@@ -158,7 +162,8 @@ if __name__ == '__main__':
 					eyeClosedStartTime = time.time()
 				elif not eyeIsClosed and eyeClosedStartTime > 0:
 					eyesClosedInterval = time.time() - eyeClosedStartTime
-					print("==> Eyes closed interval: {:.3f}".format(eyesClosedInterval))
+
+					# print("==> Eyes closed interval: {:.3f}".format(eyesClosedInterval))
 					eyeClosedStartTime = 0
 
 				yawn = detectYawn(MAR, MAR_buffer)
@@ -166,10 +171,11 @@ if __name__ == '__main__':
 					yawnStartTime = time.time()
 				elif not yawn and yawnStartTime > 0:
 					yawnInterval = time.time() - yawnStartTime
-					print("==> Yawn interval: {:.3f}".format(yawnInterval))
+					# print("==> Yawn interval: {:.3f}".format(yawnInterval))
 					yawnStartTime = 0
 
-			
+				maxEyesClosedInterval = max(maxEyesClosedInterval, eyesClosedInterval)
+				maxYawnInterval = max(maxYawnInterval, yawnInterval)
 
 			if input_args.verbose:
 				face_bb = face_utils.rect_to_bb(face)
@@ -192,6 +198,9 @@ if __name__ == '__main__':
 		else:
 			cv2.putText(frame, "No face detected.",
 				(360, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+		if maxEyesClosedInterval > EYE_CLOSE_THRESHOLD or maxYawnInterval > YAWN_THRESHOLD:
+			cv2.putText(frame, "Drowsiness Alert", (330, 440), cv2.FONT_HERSHEY_PLAIN, 1.7, (0, 0, 255), 2)
 
 		key = cv2.waitKey(1) & 0xFF
 		if key == ord("q") or key == ord("Q"):
