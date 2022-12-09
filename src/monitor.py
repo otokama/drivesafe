@@ -12,6 +12,7 @@ import sys
 import os
 
 EYE_CLOSE_THRESHOLD = 0.09
+YAWN_THRESHOLD = 0.1
 NOD_CONSEQ_FRAMES = 5
 NOD_THRESHOLD = 1
 
@@ -24,11 +25,21 @@ def EAR(eye_coor):
 	width = np.linalg.norm(eye_coor[0] - eye_coor[3])
 	return (height_1 + height_2) / (width * 2)
 
-def eyeClosed(EAR, buffer):
-	EAR_mean = np.mean(buffer)
-	return EAR_mean - EAR >= EYE_CLOSE_THRESHOLD or EAR_mean < 0.14
+def detectEyeClose(EAR, buffer):
+	mean = np.mean(buffer)
+	return mean - EAR >= EYE_CLOSE_THRESHOLD or EAR < 0.1
 
+def detectYawn(MAR, buffer):
+	mean = np.mean(buffer)
+	return mean - MAR >= YAWN_THRESHOLD or MAR > 0.2
 
+# Calculates mouth aspect ratio. Similar to EAR formula.
+def MOUTHAR(mouth_coor):
+	height_1 = np.linalg.norm(mouth_coor[1] - mouth_coor[7])
+	height_2 = np.linalg.norm(mouth_coor[2] - mouth_coor[6])
+	height_3 = np.linalg.norm(mouth_coor[3] - mouth_coor[5])
+	width = np.linalg.norm(mouth_coor[0] - mouth_coor[4])
+	return (height_1 + height_2 + height_3) / (width * 3)
 
 def calculateNoseY(nose):
 	return np.sum(nose[:,1]) / nose.shape[0]
@@ -58,6 +69,7 @@ if __name__ == '__main__':
 	(LEFT_IDX_START, LEFT_IDX_END) = face_utils.FACIAL_LANDMARKS_IDXS['left_eye']
 	(RIGHT_IDX_START, RIGHT_IDX_END) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']
 	(NOSE_IDX_START, NOSE_IDX_END) = face_utils.FACIAL_LANDMARKS_IDXS['nose']
+	(MOUTH_IDX_START, MOUTH_IDX_END) = face_utils.FACIAL_LANDMARKS_IDXS['inner_mouth']
 
 	videoInput = input_args.input != ''
 	if videoInput:
@@ -71,16 +83,20 @@ if __name__ == '__main__':
 
 	frame = stream.read()
 
-	EAR_buffer_len = 50
-	EAR_buffer = [0.3] * EAR_buffer_len
+	buffer_len = 50
+	EAR_buffer = [0.3] * buffer_len
 	eyeIsClosed = False
 	eyeClosedStartTime = 0
 	eyesClosedInterval = 0
+	yawnStartTime = 0
+	yawnInterval = 0
 	prev_nose_y = 0
 	nod_counter = 0
 	total_nod = 0
+	MAR_buffer = [0.01] * buffer_len
 	show_alert = False
-	EAR_buffer_idx = 0
+	buffer_idx = 0
+
 
 	
 	pause = False
@@ -108,10 +124,8 @@ if __name__ == '__main__':
 			break
 		graysc_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		faces = detector(graysc_img, 0)
-		if len(faces) > 1:
-			cv2.putText(frame, "Multiple faces detected. Only driver's face should be in the frame.",
-				(100, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (74, 95, 255), 2)
-		elif len(faces) == 1:
+
+		if len(faces) == 1:
 			face = faces[0]
 			face_shape = predictor(graysc_img, face)
 			face_shape = face_utils.shape_to_np(face_shape)
@@ -119,6 +133,7 @@ if __name__ == '__main__':
 			leftEyeCoordinates = face_shape[LEFT_IDX_START:LEFT_IDX_END]
 			rightEyeCoordinates = face_shape[RIGHT_IDX_START:RIGHT_IDX_END]
 			nose = face_shape[NOSE_IDX_START:NOSE_IDX_END]
+			mouth = face_shape[MOUTH_IDX_START:MOUTH_IDX_END]
 
 			curr_nose_y = calculateNoseY(nose)
 			if prev_nose_y != 0:
@@ -132,28 +147,48 @@ if __name__ == '__main__':
 
 
 			EAR_AVG = (EAR(leftEyeCoordinates) + EAR(rightEyeCoordinates)) / 2.0
-			if EAR_buffer_idx < EAR_buffer_len:
-				EAR_buffer[EAR_buffer_idx] = EAR_AVG
-				EAR_buffer_idx += 1
+			MAR = MOUTHAR(mouth)
+			if buffer_idx < buffer_len:
+				EAR_buffer[buffer_idx] = EAR_AVG
+				MAR_buffer[buffer_idx] = MAR
+				buffer_idx += 1
 			else:
-				eyeIsClosed = eyeClosed(EAR_AVG, EAR_buffer)
+				eyeIsClosed = detectEyeClose(EAR_AVG, EAR_buffer)
 				if eyeIsClosed and eyeClosedStartTime == 0:
 					eyeClosedStartTime = time.time()
 				elif not eyeIsClosed and eyeClosedStartTime > 0:
 					eyesClosedInterval = time.time() - eyeClosedStartTime
 					print("==> Eyes closed interval: {:.3f}".format(eyesClosedInterval))
 					eyeClosedStartTime = 0
+
+				yawn = detectYawn(MAR, MAR_buffer)
+				if yawn and yawnStartTime == 0:
+					yawnStartTime = time.time()
+				elif not yawn and yawnStartTime > 0:
+					yawnInterval = time.time() - yawnStartTime
+					print("==> Yawn interval: {:.3f}".format(yawnInterval))
+					yawnStartTime = 0
+
 			
+
 			if input_args.verbose:
 				face_bb = face_utils.rect_to_bb(face)
 				face_rect = cv2.rectangle(frame, (face_bb[0], face_bb[1]), 
 					(face_bb[0] + face_bb[2], face_bb[1] + face_bb[3]), (62, 255, 132), 2)
 				cv2.putText(face_rect, 'Face', 
-					(face_bb[0], face_bb[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (62, 255, 132))
+					(face_bb[0], face_bb[1] - 5), cv2.FONT_HERSHEY_PLAIN, 1, (62, 255, 132), 2)
 				cv2.putText(frame, "Nodding Cnt: {}".format(total_nod), (10, 30),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+					cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2)
 				cv2.putText(frame, "EAR (AVG): {:.2f}".format(EAR_AVG), (10, 60),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+					cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2)
+				mouthHull = cv2.convexHull(mouth)
+				cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
+				cv2.putText(frame, "MAR: {:.2f}".format(MAR), (10, 90),
+					cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2 )
+
+		elif len(faces) > 1:
+			cv2.putText(frame, "Multiple faces detected. Only driver's face should be in the frame.",
+				(100, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (74, 95, 255), 2)
 		else:
 			cv2.putText(frame, "No face detected.",
 				(360, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
