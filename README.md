@@ -15,7 +15,7 @@ Supported symptoms:
 python monitor.py
     -p / --face_landmark_predictor [path to shape_predictor_68_face_landmarks.dat]
     -v / --verbose [turns on verbose mode]
-    -i / --input [optional input video file relative path]
+    -i / --input [optional path to input video file]
 ```
 ---
 ### Credit
