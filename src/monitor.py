@@ -162,8 +162,8 @@ if __name__ == '__main__':
 					eyeClosedStartTime = time.time()
 				elif not eyeIsClosed and eyeClosedStartTime > 0:
 					eyesClosedInterval = time.time() - eyeClosedStartTime
-
-					# print("==> Eyes closed interval: {:.3f}".format(eyesClosedInterval))
+					if input_args.verbose:
+						print("==> Eyes closed interval: {:.3f}".format(eyesClosedInterval))
 					eyeClosedStartTime = 0
 
 				yawn = detectYawn(MAR, MAR_buffer)
@@ -171,7 +171,8 @@ if __name__ == '__main__':
 					yawnStartTime = time.time()
 				elif not yawn and yawnStartTime > 0:
 					yawnInterval = time.time() - yawnStartTime
-					# print("==> Yawn interval: {:.3f}".format(yawnInterval))
+					if input_args.verbose:
+						print("==> Yawn interval: {:.3f}".format(yawnInterval))
 					yawnStartTime = 0
 
 				maxEyesClosedInterval = max(maxEyesClosedInterval, eyesClosedInterval)
