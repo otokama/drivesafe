@@ -5,6 +5,7 @@ Supported symptoms:
 - Slow blinking or struggles to keep eyes open
 - Yawning
 - Nodding off or struggles to keep head up
+---
 ## Installation
 - Python 3.9.10
 - Install requirements: ```pip install -r requirements.txt```
