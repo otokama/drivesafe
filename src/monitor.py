@@ -11,12 +11,13 @@ from imutils.video import VideoStream
 import sys
 import os
 
-EYE_CLOSE_THRESHOLD = 0.5
-YAWN_THRESHOLD = 0.9
-EAR_THRESHOLD = 0.07
-MAR_THRESHOLD = 0.7
-NOD_CONSEQ_FRAMES = 5
-NOD_THRESHOLD = 1
+EYE_CLOSE_THRESHOLD = 0.5 # eye close duration threshold (s) to trigger alert
+YAWN_THRESHOLD = 0.9 # yawn duration threshold (s) to trigger alert
+EAR_THRESHOLD = 0.07 # eye close threshold
+MAR_THRESHOLD = 0.7 # mouth open threshold
+NOD_FRAMES = 10 # nodding frames count
+NOSE_MOVE_THRESHOLD = 1 # nod threshold
+NOD_CNT_THRESHOLD = 2 # nodding counter
 
 ''' Calculates Eye Aspect Ratio. Formula taken from
 Paper: Real-Time Eye Blink Detection using Facial Landmarks
@@ -94,11 +95,10 @@ if __name__ == '__main__':
 	yawnStartTime = 0
 	yawnInterval = 0
 	maxYawnInterval = 0
+	MAR_buffer = [0.01] * buffer_len
 	prev_nose_y = 0
 	nod_counter = 0
 	total_nod = 0
-	MAR_buffer = [0.01] * buffer_len
-	# show_alert = False
 	buffer_idx = 0
 
 
@@ -141,10 +141,10 @@ if __name__ == '__main__':
 
 			curr_nose_y = calculateNoseY(nose)
 			if prev_nose_y != 0:
-				if curr_nose_y - prev_nose_y > NOD_THRESHOLD:
+				if curr_nose_y - prev_nose_y > NOSE_MOVE_THRESHOLD:
 					nod_counter += 1
 				else:
-					if nod_counter > NOD_CONSEQ_FRAMES:
+					if nod_counter > NOD_FRAMES:
 						total_nod += 1
 					nod_counter = 0
 			prev_nose_y = curr_nose_y
@@ -200,7 +200,9 @@ if __name__ == '__main__':
 			cv2.putText(frame, "No face detected.",
 				(360, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-		if maxEyesClosedInterval > EYE_CLOSE_THRESHOLD or maxYawnInterval > YAWN_THRESHOLD:
+		if maxEyesClosedInterval > EYE_CLOSE_THRESHOLD \
+			or maxYawnInterval > YAWN_THRESHOLD \
+			or total_nod > NOD_CNT_THRESHOLD:
 			cv2.putText(frame, "Drowsiness Alert", (330, 440), cv2.FONT_HERSHEY_PLAIN, 1.7, (0, 0, 255), 2)
 
 		key = cv2.waitKey(1) & 0xFF
