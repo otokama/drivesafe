@@ -8,6 +8,7 @@ Supported symptoms:
 ---
 ## Installation
 - Python 3.9.10
+- CMake 3.22.1
 - Install requirements: ```pip install -r requirements.txt```
 ---
 ## Usage
