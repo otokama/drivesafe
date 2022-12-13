@@ -1,4 +1,4 @@
-# Drive Safe - a driver fatigue detection app 
+# Drive Safe - fatigue driving detector 
 
 Detects fatigue driving using OpenCV, dlib (face recognition and facial landmark detection), imutils (image processing).   
 ## Supported fatigue symptoms:
