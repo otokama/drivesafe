@@ -1,21 +1,16 @@
 # Drive Safe - a driver fatigue detection app 
 
 Detects fatigue driving using OpenCV, dlib (face recognition and facial landmark detection), imutils (image processing).   
-
----
 ## Supported fatigue symptoms:
 
 - [x] Slow blinking or struggles to keep eyes open
 - [x] Nodding off or struggles to keep head up
 - [x] Yawning
 
-
----
 ## Installation
 - Python 3.9.10
 - CMake 3.22.1
 - Install requirements: ```pip install -r requirements.txt```
----
 ## Usage
 ```
 python monitor.py
