@@ -2,9 +2,9 @@
 
 Detects fatigue driving using OpenCV, dlib (face recognition and facial landmark detection), imutils (image processing).   
 Supported symptoms:
-- Slow blinking or struggles to keep eyes open
-- Yawning
-- Nodding off or struggles to keep head up
+- [x] Slow blinking or struggles to keep eyes open
+- [x] Yawning
+- [x] Nodding off or struggles to keep head up
 ---
 ## Installation
 - Python 3.9.10
