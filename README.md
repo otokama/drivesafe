@@ -24,4 +24,5 @@ Press 'p' to pause or continue. Press 'q' to exit the app.
 
 ---
 ### Credit
-[68-point facial landmarks model](https://github.com/davisking/dlib-models#shape_predictor_68_face_landmarksdatbz2) by Davis E. King.
+- [Real-Time Eye Blink Detection using Facial Landmarks](https://www.semanticscholar.org/paper/Real-Time-Eye-Blink-Detection-using-Facial-Soukupov%C3%A1-Cech/4fa1ba3531219ca8c39d8749160faf1a877f2ced) by Tereza Soukupová and Jan Cech
+- [68-point facial landmarks model](https://github.com/davisking/dlib-models#shape_predictor_68_face_landmarksdatbz2) by Davis E. King.
