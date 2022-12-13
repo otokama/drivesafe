@@ -11,6 +11,7 @@ Detects fatigue driving using OpenCV, dlib (face recognition and facial landmark
 - Python 3.9.10
 - CMake 3.22.1
 - Install requirements: ```pip install -r requirements.txt```
+
 ## Usage
 ```
 python monitor.py
